@@ -4,7 +4,8 @@ import Navigation from './components/Navigation';
 import { ServiceType, BookingRequest } from './types';
 import { getGeminiResponse } from './services/geminiService';
 
-const APP_VERSION = "1.2.7"; // Chat Design Update
+const APP_VERSION = "1.3.1"; // Contact Validation Update
+const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/u/0/appointments/schedules/YOUR_SCHEDULE_ID"; // Platzhalter für Ihren Buchungslink
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -25,6 +26,8 @@ const App: React.FC = () => {
   // Contact States
   const [contactName, setContactName] = useState('');
   const [contactMessage, setContactMessage] = useState('');
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [formAttempted, setFormAttempted] = useState(false);
 
   const services = [
     { type: ServiceType.GARDENING, title: 'Gartenpflege', desc: 'Rasenmähen, Heckenschnitt und Beetpflege für einen traumhaften Garten.', icon: 'fa-seedling', color: 'bg-green-100 text-green-600', accent: 'border-green-200' },
@@ -86,8 +89,20 @@ const App: React.FC = () => {
     setTimeout(() => setShowSuccess(false), 8000);
   };
 
+  const handleCalendarOpen = () => {
+    window.open(GOOGLE_CALENDAR_URL, '_blank');
+  };
+
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormAttempted(true);
+    
+    if (!contactName.trim() || !contactMessage.trim()) {
+      setContactError("Bitte füllen Sie beide Felder aus.");
+      return;
+    }
+
+    setContactError(null);
     const subject = encodeURIComponent(`Allround Service Stielke - Kontaktanfrage`);
     const body = encodeURIComponent(`Name: ${contactName}\n\nNachricht:\n${contactMessage}\n\n---\nGesendet via App v${APP_VERSION}`);
     window.location.href = `mailto:kontakt@allroundservicestielke.de?subject=${subject}&body=${body}`;
@@ -132,10 +147,17 @@ const App: React.FC = () => {
                 <p className="text-base md:text-xl text-blue-50 opacity-95 mb-8 max-w-2xl font-medium">
                   Professionelle Haus- und Gartenpflege aus einer Hand.
                 </p>
+
+                <button 
+                  onClick={() => setActiveTab('services')}
+                  className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                >
+                  <i className="fa-solid fa-calendar-days"></i>
+                  Termin buchen
+                </button>
               </div>
             </div>
 
-            {/* Quick Actions Bar */}
             <div className="space-y-4">
               <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Schnellzugriff</h2>
               <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4">
@@ -154,7 +176,6 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Content Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {services.map((s, idx) => (
                 <div key={idx} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300">
@@ -167,7 +188,6 @@ const App: React.FC = () => {
               ))}
             </div>
 
-            {/* Chatbot Toggle UI for Home */}
             <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end gap-4 pointer-events-none">
               {isChatOpen && (
                 <div className="w-[calc(100vw-3rem)] md:w-96 h-[500px] bg-slate-50 rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-100 flex flex-col overflow-hidden animate-slide-up pointer-events-auto mb-2">
@@ -251,30 +271,42 @@ const App: React.FC = () => {
           <section className="space-y-8 animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
               <div>
-                <h2 className="text-3xl font-bold text-slate-800">Unsere Dienstleistungen</h2>
-                <p className="text-slate-500 mt-2">Wählen Sie einen Service für eine Direktanfrage per E-Mail.</p>
+                <h2 className="text-3xl font-bold text-slate-800">Termin & Buchung</h2>
+                <p className="text-slate-500 mt-2">Buchen Sie direkt online oder senden Sie uns eine Anfrage.</p>
               </div>
-              {!showBookingForm && (
+              <div className="flex gap-3">
                 <button 
-                  onClick={() => setShowBookingForm(true)}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-200"
+                  onClick={handleCalendarOpen}
+                  className="bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold hover:bg-slate-900 transition-all flex items-center gap-2 shadow-lg"
                 >
-                  <i className="fa-solid fa-paper-plane"></i>
-                  Jetzt anfragen
+                  <i className="fa-solid fa-calendar-check"></i>
+                  Direkt-Termin
                 </button>
-              )}
+                {!showBookingForm && (
+                  <button 
+                    onClick={() => setShowBookingForm(true)}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-200"
+                  >
+                    <i className="fa-solid fa-paper-plane"></i>
+                    Anfrage senden
+                  </button>
+                )}
+              </div>
             </div>
 
             {showBookingForm && (
               <div className="bg-white rounded-[2.5rem] shadow-2xl border border-blue-50 p-6 md:p-10 animate-slide-up relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-blue-600"></div>
                 <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
-                      <i className="fa-solid fa-envelope"></i>
-                    </div>
-                    Anfrage senden
-                  </h3>
+                  <div className="flex flex-col">
+                    <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
+                        <i className="fa-solid fa-envelope"></i>
+                      </div>
+                      Service anfragen
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 ml-13">Per E-Mail Entwurf</p>
+                  </div>
                   <button onClick={() => setShowBookingForm(false)} className="bg-slate-50 text-slate-400 hover:text-slate-600 p-3 rounded-full transition-colors">
                     <i className="fa-solid fa-xmark text-xl"></i>
                   </button>
@@ -296,7 +328,7 @@ const App: React.FC = () => {
                   </div>
                   
                   <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">TERMIN</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">TERMINWUNSCH</label>
                     <input 
                       type="date"
                       value={bookingDate}
@@ -307,11 +339,11 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="space-y-3 md:col-span-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">DETAILS</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">BESCHREIBUNG</label>
                     <textarea 
                       value={bookingDesc}
                       onChange={(e) => setBookingDesc(e.target.value)}
-                      placeholder="Was können wir für Sie tun? Bitte beschreiben Sie Ihr Anliegen so genau wie möglich."
+                      placeholder="Was können wir für Sie tun?"
                       rows={5}
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all resize-none font-medium"
                       required
@@ -319,23 +351,25 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-slate-50">
-                    <div className="flex items-center gap-3 text-slate-400">
-                      <i className="fa-solid fa-circle-info text-blue-400"></i>
-                      <p className="text-xs leading-relaxed">
-                        Wir leiten Sie direkt zu Ihrem E-Mail Programm weiter an Allround Service Stielke.
-                      </p>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                        <i className="fa-solid fa-calendar-check text-blue-600"></i>
+                        <span>Alternative: Google Kalender</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Direkte Terminbuchung ohne Wartezeit.</p>
                     </div>
                     <div className="flex gap-4 w-full md:w-auto">
                       <button 
                         type="button"
-                        onClick={() => setShowBookingForm(false)}
-                        className="flex-1 md:flex-none px-8 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-colors"
+                        onClick={handleCalendarOpen}
+                        className="flex-1 md:flex-none px-6 py-4 rounded-2xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
                       >
-                        Abbrechen
+                        <i className="fa-brands fa-google"></i>
+                        Kalender
                       </button>
                       <button 
                         type="submit"
-                        className="flex-1 md:flex-none bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3"
+                        className="flex-2 md:flex-none bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3"
                       >
                         <i className="fa-solid fa-envelope-open-text"></i>
                         E-Mail Entwurf
@@ -364,12 +398,22 @@ const App: React.FC = () => {
                       <h3 className="text-2xl font-bold text-slate-800">{s.title}</h3>
                     </div>
                     <p className="text-slate-500 mb-8 flex-1 leading-relaxed">{s.desc}</p>
-                    <button 
-                      onClick={() => openBooking(s.type)}
-                      className="w-full bg-slate-50 group-hover:bg-blue-600 text-blue-600 group-hover:text-white border-2 border-blue-50 group-hover:border-blue-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300"
-                    >
-                      Jetzt Kontaktieren <i className="fa-solid fa-chevron-right text-xs"></i>
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handleCalendarOpen}
+                        className="flex-1 bg-slate-800 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-slate-900 shadow-md"
+                        title="Direkt im Google Kalender buchen"
+                      >
+                        <i className="fa-solid fa-calendar-check"></i>
+                        Termin
+                      </button>
+                      <button 
+                        onClick={() => openBooking(s.type)}
+                        className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-blue-700 shadow-md shadow-blue-100"
+                      >
+                        Anfrage
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -391,9 +435,6 @@ const App: React.FC = () => {
                     KI-Assistent ist bereit
                   </p>
                 </div>
-              </div>
-              <div className="hidden md:block">
-                <span className="text-[10px] font-bold uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full border border-white/5">Salzatal Region</span>
               </div>
             </div>
             
@@ -449,7 +490,7 @@ const App: React.FC = () => {
           </section>
         )}
 
-        {activeTab === 'contact' && (activeTab === 'contact' && (
+        {activeTab === 'contact' && (
           <section className="max-w-3xl mx-auto bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100 animate-fade-in mb-12">
             <h2 className="text-4xl font-black mb-10 text-slate-800 tracking-tight">Kontakt</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -483,7 +524,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Mobile version display */}
                 <div className="pt-4 border-t border-slate-50 flex items-center gap-2 opacity-40">
                   <i className="fa-solid fa-code-branch text-[10px]"></i>
                   <span className="text-[10px] font-bold tracking-widest uppercase">Version {APP_VERSION}</span>
@@ -496,23 +536,45 @@ const App: React.FC = () => {
                   Direktanfrage
                 </h4>
                 <div className="space-y-4">
-                  <input 
-                    type="text" 
-                    placeholder="Ihr Name" 
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium" 
-                  />
-                  <textarea 
-                    placeholder="Nachricht..." 
-                    rows={4} 
-                    value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none resize-none font-medium"
-                  ></textarea>
+                  <div className="space-y-1">
+                    <input 
+                      type="text" 
+                      placeholder="Ihr Name" 
+                      value={contactName}
+                      onChange={(e) => {
+                        setContactName(e.target.value);
+                        if (e.target.value.trim()) setContactError(null);
+                      }}
+                      className={`w-full bg-white border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium ${
+                        formAttempted && !contactName.trim() ? 'border-red-400 animate-shake' : 'border-slate-100'
+                      }`} 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <textarea 
+                      placeholder="Nachricht..." 
+                      rows={4} 
+                      value={contactMessage}
+                      onChange={(e) => {
+                        setContactMessage(e.target.value);
+                        if (e.target.value.trim()) setContactError(null);
+                      }}
+                      className={`w-full bg-white border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none resize-none font-medium transition-all ${
+                        formAttempted && !contactMessage.trim() ? 'border-red-400 animate-shake' : 'border-slate-100'
+                      }`}
+                    ></textarea>
+                  </div>
+                  
+                  {contactError && (
+                    <p className="text-xs text-red-500 font-bold ml-1 animate-fade-in">
+                      <i className="fa-solid fa-circle-exclamation mr-1"></i>
+                      {contactError}
+                    </p>
+                  )}
+
                   <button 
                     onClick={handleContactSubmit}
-                    className="w-full bg-blue-600 text-white font-bold py-5 rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-100"
+                    className="w-full bg-blue-600 text-white font-bold py-5 rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-100 active:scale-95"
                   >
                     <i className="fa-solid fa-envelope-open-text text-xl"></i>
                     E-Mail Entwurf
@@ -524,7 +586,7 @@ const App: React.FC = () => {
               </div>
             </div>
           </section>
-        ))}
+        )}
       </main>
 
       <footer className="hidden md:block py-16 text-center">
@@ -548,9 +610,15 @@ const App: React.FC = () => {
           0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
           50% { transform: scale(1.05); box-shadow: 0 15px 45px rgba(37, 99, 235, 0.5); }
         }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
         .animate-fade-in { animation: fade-in 0.8s ease-out; }
         .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
         .animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
+        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
         body { background-color: #f8fafc; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
