@@ -24,7 +24,6 @@ const App: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedService, setSelectedService] = useState<ServiceType>(ServiceType.GARDENING);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,11 +49,13 @@ const App: React.FC = () => {
     setIsTyping(false);
   };
 
-  const services = [
-    { type: ServiceType.GARDENING, title: 'Gartenpflege', desc: 'Rasenmähen, Heckenschnitt und Beetpflege.', icon: 'fa-seedling', color: 'bg-green-100 text-green-600' },
-    { type: ServiceType.REPAIR, title: 'Hausmeister', desc: 'Kontrolle und Wartung Ihrer Immobilie.', icon: 'fa-screwdriver-wrench', color: 'bg-blue-100 text-blue-600' },
-    { type: ServiceType.RENOVATION, title: 'Renovierung', desc: 'Malerarbeiten und kleine Projekte.', icon: 'fa-brush', color: 'bg-orange-100 text-orange-600' },
-    { type: ServiceType.CLEANING, title: 'Reinigung', desc: 'Gründliche Treppenhausreinigung.', icon: 'fa-soap', color: 'bg-purple-100 text-purple-600' }
+  const tarife = [
+    { title: "Standard-Reinigung", price: "ab 99 € / Monat", details: ["SmartClean Basis", "ComfortCare", "PremiumPro"], icon: "fa-house-chimney-window", color: "text-blue-600", bg: "bg-blue-50" },
+    { title: "Ferienwohnungen", price: "ab 49 € / Reinigung", details: ["Endreinigung", "Wäscheservice", "HolidayPlus"], icon: "fa-umbrella-beach", color: "text-orange-600", bg: "bg-orange-50" },
+    { title: "Monteurwohnungen", price: "ab 69 € / Woche", details: ["WorkerClean", "WorkerPro Täglich", "Wäscheservice"], icon: "fa-helmet-safety", color: "text-slate-600", bg: "bg-slate-100" },
+    { title: "Glasreinigung", price: "ab 3,50 € / Fenster", details: ["Rahmen & Falz", "Nano-Versiegelung", "Gewerbe"], icon: "fa-sparkles", color: "text-cyan-500", bg: "bg-cyan-50" },
+    { title: "Büroreinigung", price: "ab 149 € / Monat", details: ["OfficeClean", "Desinfektion", "Teppichpflege"], icon: "fa-briefcase", color: "text-indigo-600", bg: "bg-indigo-50" },
+    { title: "Industriereinigung", price: "ab 399 € / Monat", details: ["Produktionsflächen", "Maschinenpflege", "IndustriPro"], icon: "fa-industry", color: "text-red-600", bg: "bg-red-50" },
   ];
 
   return (
@@ -72,45 +73,88 @@ const App: React.FC = () => {
                 <div className="bg-white/95 p-8 rounded-[2.5rem] inline-block mb-4 shadow-xl">
                   <Logo />
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter">Profi-Service <br/>aus Salzatal</h1>
+                <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter">Ihre Reinigungsprofis <br/>aus Salzatal</h1>
                 <div className="flex flex-col md:flex-row gap-4 justify-center">
-                  <button onClick={() => setActiveTab('services')} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl active:scale-95 transition-transform">Leistungen</button>
-                  <a href={`tel:${PHONE_NUMBER}`} className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                    <i className="fa-solid fa-phone"></i> Anrufen
-                  </a>
+                  <button onClick={() => setActiveTab('services')} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl active:scale-95 transition-transform">Unsere Tarife</button>
+                  <button onClick={() => setActiveTab('assistant')} className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                    <i className="fa-solid fa-robot"></i> KI-Berater
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {services.map((s, i) => (
-                <button key={i} onClick={() => { setSelectedService(s.type); setActiveTab('services'); }} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center gap-3 active:scale-95 transition-transform">
-                  <div className={`w-12 h-12 ${s.color} rounded-xl flex items-center justify-center text-xl shadow-inner`}><i className={`fa-solid ${s.icon}`}></i></div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">{s.title}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-6">
+                 <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl"><i className="fa-solid fa-shield-check"></i></div>
+                 <div>
+                    <h3 className="font-black uppercase text-xs tracking-widest text-slate-400">Verlässlich</h3>
+                    <p className="font-bold text-slate-800">100% Servicegarantie</p>
+                 </div>
+              </div>
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-6">
+                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center text-2xl"><i className="fa-solid fa-leaf"></i></div>
+                 <div>
+                    <h3 className="font-black uppercase text-xs tracking-widest text-slate-400">Ökologisch</h3>
+                    <p className="font-bold text-slate-800">Schonende Reinigung</p>
+                 </div>
+              </div>
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-6">
+                 <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center text-2xl"><i className="fa-solid fa-clock-rotate-left"></i></div>
+                 <div>
+                    <h3 className="font-black uppercase text-xs tracking-widest text-slate-400">Express</h3>
+                    <p className="font-bold text-slate-800">Service in 24h</p>
+                 </div>
+              </div>
             </div>
           </section>
         )}
 
         {activeTab === 'services' && (
-          <section className="space-y-6 animate-fade-in pb-10">
-            <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl">
-              <h2 className="text-2xl font-black uppercase tracking-tight">Unsere Leistungen</h2>
-              <p className="opacity-80 text-sm">Qualität und Zuverlässigkeit für Ihr Objekt.</p>
+          <section className="space-y-8 animate-fade-in pb-10">
+            <div className="bg-blue-600 p-10 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+              <div className="relative z-10">
+                <h2 className="text-3xl font-black uppercase tracking-tight">Unsere Reinigungstarife</h2>
+                <p className="opacity-80 mt-2">Professionell, zuverlässig und fair kalkuliert.</p>
+              </div>
+              <i className="fa-solid fa-broom absolute right-[-20px] bottom-[-20px] text-[120px] opacity-10 rotate-12"></i>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {services.map((s, i) => (
-                <div key={i} className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 ${s.color} rounded-xl flex items-center justify-center text-xl`}><i className={`fa-solid ${s.icon}`}></i></div>
-                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">{s.title}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tarife.map((t, i) => (
+                <div key={i} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+                  <div>
+                    <div className={`w-14 h-14 ${t.bg} ${t.color} rounded-2xl flex items-center justify-center text-2xl mb-6 transition-transform group-hover:scale-110`}>
+                      <i className={`fa-solid ${t.icon}`}></i>
+                    </div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">{t.title}</h3>
+                    <div className="text-blue-600 font-black text-lg mb-4">{t.price}</div>
+                    <ul className="space-y-2 mb-8">
+                      {t.details.map((d, idx) => (
+                        <li key={idx} className="text-slate-500 text-sm flex items-center gap-2">
+                          <i className="fa-solid fa-check text-[10px] text-green-500"></i> {d}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <p className="text-slate-500 text-sm">{s.desc}</p>
-                  <button onClick={() => handleWhatsAppOpen(`Ich habe eine Anfrage zu: ${s.title}`)} className="mt-2 text-blue-600 font-black uppercase text-[10px] tracking-widest flex items-center gap-2">Jetzt anfragen <i className="fa-solid fa-arrow-right"></i></button>
+                  <button 
+                    onClick={() => handleWhatsAppOpen(`Anfrage zu Tarif: ${t.title}`)} 
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-600 transition-colors active:scale-95"
+                  >
+                    Details Anfragen
+                  </button>
                 </div>
               ))}
+            </div>
+
+            <div className="bg-orange-50 border border-orange-100 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6">
+               <div className="flex items-center gap-6">
+                 <div className="w-16 h-16 bg-white text-orange-600 rounded-full flex items-center justify-center text-2xl shadow-sm"><i className="fa-solid fa-bolt"></i></div>
+                 <div>
+                    <h4 className="font-black text-slate-800 uppercase tracking-tight">Express-Service benötigt?</h4>
+                    <p className="text-slate-600 text-sm">Reinigung innerhalb von 24 Stunden möglich.</p>
+                 </div>
+               </div>
+               <button onClick={() => handleWhatsAppOpen("EILANFRAGE: Express-Reinigung benötigt!")} className="bg-orange-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-orange-200">Sofort-Check</button>
             </div>
           </section>
         )}
@@ -136,7 +180,7 @@ const App: React.FC = () => {
               {chatMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center py-10 opacity-30">
                    <i className="fa-solid fa-comments text-4xl mb-4 text-slate-400"></i>
-                   <p className="font-bold uppercase text-xs tracking-[0.2em]">Haben Sie Fragen zu unseren Services?</p>
+                   <p className="font-bold uppercase text-xs tracking-[0.2em] px-10">Fragen Sie nach unseren Reinigungstarifen oder Dienstleistungen!</p>
                 </div>
               )}
               {chatMessages.map((msg, i) => (
@@ -173,7 +217,7 @@ const App: React.FC = () => {
                   value={userInput} 
                   onChange={(e) => setUserInput(e.target.value)} 
                   disabled={isTyping}
-                  placeholder={isTyping ? "Bitte kurz warten..." : "Ihre Frage..."} 
+                  placeholder={isTyping ? "Bitte kurz warten..." : "Was kostet die Reinigung?"} 
                   className={`flex-1 bg-slate-100 rounded-xl px-4 py-4 text-sm outline-none transition-all ${isTyping ? 'opacity-50 cursor-not-allowed' : 'focus:ring-2 focus:ring-blue-100'}`} 
                 />
                 <button 
@@ -212,20 +256,18 @@ const App: React.FC = () => {
                   <div className="w-14 h-14 bg-white text-slate-600 rounded-xl flex items-center justify-center shadow-sm"><i className="fa-solid fa-location-dot text-xl"></i></div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Standort</p>
-                    <p className="font-black text-slate-800">06198 Salzatal</p>
+                    <p className="font-black text-slate-800">Salzatal</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-slate-900 text-white rounded-[2rem] p-8 space-y-4 max-w-md mx-auto md:mx-0">
-                <h3 className="font-black uppercase tracking-widest text-xs text-blue-400 text-center mb-4">Erreichbarkeit</h3>
+                <h3 className="font-black uppercase tracking-widest text-xs text-blue-400 text-center mb-4">Kontakt Details</h3>
+                <p className="text-sm text-slate-400 text-center md:text-left">Naundorfer Weg 4, 06198 Salzatal</p>
+                <div className="h-px bg-slate-800 my-4"></div>
                 <div className="flex justify-between text-xs uppercase tracking-wider">
                   <span>Montag - Freitag</span>
                   <span>08:00 - 18:00 Uhr</span>
-                </div>
-                <div className="flex justify-between text-xs uppercase tracking-wider text-slate-400">
-                  <span>Samstag</span>
-                  <span>Nach Vereinbarung</span>
                 </div>
               </div>
             </div>
