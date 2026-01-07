@@ -1,0 +1,8 @@
+{
+  "name": "Allround Service Stielke",
+  "description": "Exklusive Service-Plattform für Hausmeisterdienste, Gartenpflege und Gebäudereinigung.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
