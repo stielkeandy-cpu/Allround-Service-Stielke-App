@@ -28,7 +28,9 @@ const App: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [chatMessages, isTyping]);
 
   const handleWhatsAppOpen = (msg?: string) => {
@@ -114,8 +116,8 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'assistant' && (
-          <section className="h-[calc(100vh-16rem)] bg-white rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col overflow-hidden animate-fade-in">
-            <div className="bg-slate-900 p-6 text-white flex items-center justify-between">
+          <section className="h-[calc(100vh-16rem)] bg-white rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col overflow-hidden animate-fade-in relative">
+            <div className="bg-slate-900 p-6 text-white flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
                   <i className="fa-solid fa-robot text-sm"></i>
@@ -123,24 +125,26 @@ const App: React.FC = () => {
                 <span className="font-black text-xs uppercase tracking-widest">KI-Fachberater</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Online</span>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${isTyping ? 'text-blue-400' : 'text-green-400'}`}>
+                  {isTyping ? 'Erstellt Antwort...' : 'Online'}
+                </span>
+                <div className={`w-2 h-2 rounded-full ${isTyping ? 'bg-blue-400 animate-ping' : 'bg-green-500 animate-pulse'}`}></div>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 relative">
               {chatMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center py-10 opacity-30">
-                   <i className="fa-solid fa-comments text-4xl mb-4"></i>
-                   <p className="font-bold uppercase text-xs tracking-[0.2em]">Wie kann ich Ihnen heute helfen?</p>
+                   <i className="fa-solid fa-comments text-4xl mb-4 text-slate-400"></i>
+                   <p className="font-bold uppercase text-xs tracking-[0.2em]">Haben Sie Fragen zu unseren Services?</p>
                 </div>
               )}
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
                     msg.role === 'user' 
-                      ? 'bg-blue-600 text-white shadow-lg rounded-tr-none' 
-                      : 'bg-white text-slate-800 border border-slate-100 shadow-sm rounded-tl-none'
+                      ? 'bg-blue-600 text-white rounded-tr-none' 
+                      : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
                   }`}>
                     {msg.text}
                   </div>
@@ -149,37 +153,35 @@ const App: React.FC = () => {
               
               {isTyping && (
                 <div className="flex justify-start animate-fade-in">
-                  <div className="bg-white text-slate-800 border border-slate-100 shadow-sm p-4 rounded-2xl rounded-tl-none flex items-center gap-1">
-                    <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce"></div>
+                  <div className="bg-white text-slate-800 border border-slate-100 shadow-sm p-4 rounded-2xl rounded-tl-none flex flex-col gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Stielke-KI denkt...</span>
                   </div>
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
 
-            <div className="relative">
-              {isTyping && (
-                <div className="absolute -top-8 left-6 text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">
-                  Stielke Assistent denkt nach...
-                </div>
-              )}
-              <form onSubmit={handleChatSubmit} className="p-4 bg-white border-t flex gap-2 items-center">
+            <div className="p-4 bg-white border-t">
+              <form onSubmit={handleChatSubmit} className="flex gap-2 items-center">
                 <input 
                   type="text" 
                   value={userInput} 
                   onChange={(e) => setUserInput(e.target.value)} 
                   disabled={isTyping}
-                  placeholder={isTyping ? "Bitte warten..." : "Ihre Frage..."} 
-                  className={`flex-1 bg-slate-100 rounded-xl px-4 py-3 outline-none transition-opacity ${isTyping ? 'opacity-50' : 'opacity-100'}`} 
+                  placeholder={isTyping ? "Bitte kurz warten..." : "Ihre Frage..."} 
+                  className={`flex-1 bg-slate-100 rounded-xl px-4 py-4 text-sm outline-none transition-all ${isTyping ? 'opacity-50 cursor-not-allowed' : 'focus:ring-2 focus:ring-blue-100'}`} 
                 />
                 <button 
                   type="submit" 
                   disabled={isTyping || !userInput.trim()}
-                  className={`bg-blue-600 text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 ${isTyping || !userInput.trim() ? 'opacity-50 grayscale' : 'hover:bg-blue-700'}`}
+                  className={`bg-blue-600 text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 ${isTyping || !userInput.trim() ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:bg-blue-700 shadow-blue-200'}`}
                 >
-                  <i className="fa-solid fa-paper-plane"></i>
+                  <i className={`fa-solid ${isTyping ? 'fa-circle-notch fa-spin' : 'fa-paper-plane'}`}></i>
                 </button>
               </form>
             </div>
