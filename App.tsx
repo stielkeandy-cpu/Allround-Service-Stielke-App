@@ -1,14 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navigation from './components/Navigation';
 import { ServiceType, BookingRequest } from './types';
 import { getGeminiResponse } from './services/geminiService';
+
+const APP_VERSION = "1.2.6"; // Update Icons
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   
   // Booking States
   const [showBookingForm, setShowBookingForm] = useState(false);
@@ -23,11 +27,17 @@ const App: React.FC = () => {
   const [contactMessage, setContactMessage] = useState('');
 
   const services = [
-    { type: ServiceType.GARDENING, title: 'Gartenpflege', desc: 'Rasenmähen, Heckenschnitt und Beetpflege für einen traumhaften Garten.', icon: 'fa-leaf', color: 'bg-green-100 text-green-600' },
-    { type: ServiceType.REPAIR, title: 'Hausmeisterservice', desc: 'Regelmäßige Kontrolle und Wartung Ihrer Immobilie.', icon: 'fa-key', color: 'bg-blue-100 text-blue-600' },
-    { type: ServiceType.RENOVATION, title: 'Renovierung', desc: 'Malerarbeiten, Bodenlegen und kleine Trockenbau-Projekte.', icon: 'fa-paint-roller', color: 'bg-orange-100 text-orange-600' },
-    { type: ServiceType.CLEANING, title: 'Reinigung', desc: 'Gründliche Treppenhaus- und Fensterreinigung.', icon: 'fa-broom', color: 'bg-purple-100 text-purple-600' }
+    { type: ServiceType.GARDENING, title: 'Gartenpflege', desc: 'Rasenmähen, Heckenschnitt und Beetpflege für einen traumhaften Garten.', icon: 'fa-seedling', color: 'bg-green-100 text-green-600', accent: 'border-green-200' },
+    { type: ServiceType.REPAIR, title: 'Hausmeisterservice', desc: 'Regelmäßige Kontrolle und Wartung Ihrer Immobilie.', icon: 'fa-screwdriver-wrench', color: 'bg-blue-100 text-blue-600', accent: 'border-blue-200' },
+    { type: ServiceType.RENOVATION, title: 'Renovierung', desc: 'Malerarbeiten, Bodenlegen und kleine Trockenbau-Projekte.', icon: 'fa-brush', color: 'bg-orange-100 text-orange-600', accent: 'border-orange-200' },
+    { type: ServiceType.CLEANING, title: 'Reinigung', desc: 'Gründliche Treppenhaus- und Fensterreinigung.', icon: 'fa-soap', color: 'bg-purple-100 text-purple-600', accent: 'border-purple-200' }
   ];
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isTyping]);
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +56,10 @@ const App: React.FC = () => {
   const openBooking = (type: ServiceType) => {
     setSelectedService(type);
     setShowBookingForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveTab('services');
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   const handleBookingSubmit = (e: React.FormEvent) => {
@@ -63,8 +76,8 @@ const App: React.FC = () => {
     setShowSuccess(true);
     setShowBookingForm(false);
     
-    const subject = encodeURIComponent(`Service-Anfrage: ${selectedService}`);
-    const body = encodeURIComponent(`Hallo Allround Service Stielke,\n\nich möchte folgende Leistung anfragen:\n\nService: ${selectedService}\nDatum: ${bookingDate}\nBeschreibung: ${bookingDesc}\n\nBitte um Rückmeldung.`);
+    const subject = encodeURIComponent(`Service-Anfrage: ${selectedService} (App v${APP_VERSION})`);
+    const body = encodeURIComponent(`Hallo Allround Service Stielke,\n\nich möchte folgende Leistung anfragen:\n\nService: ${selectedService}\nDatum: ${bookingDate}\nBeschreibung: ${bookingDesc}\n\nBitte um Rückmeldung.\n\n---\nGesendet via App v${APP_VERSION}`);
     
     window.location.href = `mailto:kontakt@allroundservicestielke.de?subject=${subject}&body=${body}`;
     
@@ -76,7 +89,7 @@ const App: React.FC = () => {
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const subject = encodeURIComponent(`Allround Service Stielke - Kontaktanfrage`);
-    const body = encodeURIComponent(`Name: ${contactName}\n\nNachricht:\n${contactMessage}`);
+    const body = encodeURIComponent(`Name: ${contactName}\n\nNachricht:\n${contactMessage}\n\n---\nGesendet via App v${APP_VERSION}`);
     window.location.href = `mailto:kontakt@allroundservicestielke.de?subject=${subject}&body=${body}`;
   };
 
@@ -96,49 +109,55 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'home' && (
-          <section className="animate-fade-in space-y-8">
+          <section className="animate-fade-in space-y-10 relative">
+            {/* Hero Section */}
             <div className="relative h-96 md:h-[500px] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center justify-center p-6 text-center border-4 border-white">
               <img src="https://images.unsplash.com/photo-1581578731522-745d05cb972b?auto=format&fit=crop&q=80&w=1200" className="absolute inset-0 w-full h-full object-cover" alt="Service background" />
               <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/50 to-slate-900/85"></div>
               
               <div className="relative z-10 flex flex-col items-center max-w-3xl">
-                <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] mb-8 transform hover:scale-105 transition-all duration-500 border border-slate-100 flex flex-col items-center">
-                  <div className="w-24 h-24 md:w-32 md:h-32 bg-blue-600 rounded-3xl flex items-center justify-center text-white mb-6 shadow-xl shadow-blue-200">
-                    <i className="fa-solid fa-broom text-5xl md:text-7xl"></i>
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] mb-8 transform hover:scale-105 transition-all duration-500 border border-slate-100 flex flex-col items-center">
+                  <div className="w-16 h-16 md:w-24 md:h-24 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-xl shadow-blue-200">
+                    <i className="fa-solid fa-screwdriver-wrench text-3xl md:text-5xl"></i>
                   </div>
                   <div className="flex flex-col items-center">
-                    <span className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter">ALLROUND SERVICE</span>
+                    <span className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">Allround Service</span>
                     <span className="text-sm md:text-lg font-bold text-blue-600 uppercase tracking-widest mt-1">Stielke</span>
                   </div>
                 </div>
                 
-                <h1 className="text-4xl md:text-6xl font-black mb-4 text-white drop-shadow-2xl tracking-tight">
-                  Allround Service <span className="text-blue-400">Stielke</span>
+                <h1 className="text-3xl md:text-6xl font-black mb-4 text-white drop-shadow-2xl tracking-tight">
+                  Ihr Partner in <span className="text-blue-400">Salzatal</span>
                 </h1>
-                <p className="text-lg md:text-2xl text-blue-50 opacity-95 mb-10 max-w-2xl font-medium">
-                  Kompetenter Service rund um Haus, Garten und Hof in Salzatal.
+                <p className="text-base md:text-xl text-blue-50 opacity-95 mb-8 max-w-2xl font-medium">
+                  Professionelle Haus- und Gartenpflege aus einer Hand.
                 </p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  <button 
-                    onClick={() => setActiveTab('services')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-2xl transition-all transform hover:scale-105 shadow-xl shadow-blue-900/30 flex items-center gap-3"
-                  >
-                    <i className="fa-solid fa-wand-magic-sparkles"></i>
-                    Dienste entdecken
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('contact')}
-                    className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border-2 border-white/30 font-bold py-4 px-10 rounded-2xl transition-all transform hover:scale-105"
-                  >
-                    Kontakt aufnehmen
-                  </button>
-                </div>
               </div>
             </div>
 
+            {/* Quick Actions Bar */}
+            <div className="space-y-4">
+              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Schnellzugriff</h2>
+              <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4">
+                {services.map((s, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => openBooking(s.type)}
+                    className={`flex-shrink-0 w-40 md:w-full bg-white p-5 rounded-[2rem] border-2 ${s.accent} shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center gap-3 group`}
+                  >
+                    <div className={`w-12 h-12 ${s.color} rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform`}>
+                      <i className={`fa-solid ${s.icon}`}></i>
+                    </div>
+                    <span className="font-bold text-slate-700 text-sm">{s.title} anfragen</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {services.map((s, idx) => (
-                <div key={idx} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                <div key={idx} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300">
                   <div className={`w-14 h-14 ${s.color} rounded-2xl flex items-center justify-center mb-6 text-2xl shadow-inner`}>
                     <i className={`fa-solid ${s.icon}`}></i>
                   </div>
@@ -146,6 +165,76 @@ const App: React.FC = () => {
                   <p className="text-slate-500 text-sm leading-relaxed">{s.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Chatbot Toggle UI for Home */}
+            <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end gap-4 pointer-events-none">
+              {isChatOpen && (
+                <div className="w-[calc(100vw-3rem)] md:w-96 h-[500px] bg-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-100 flex flex-col overflow-hidden animate-slide-up pointer-events-auto mb-2">
+                  <div className="bg-blue-600 p-5 text-white flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
+                        <i className="fa-solid fa-robot"></i>
+                      </div>
+                      <span className="font-bold">Stielke KI-Helfer</span>
+                    </div>
+                    <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/10 p-2 rounded-lg transition-colors">
+                      <i className="fa-solid fa-minus"></i>
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/50">
+                    {chatMessages.length === 0 && (
+                      <p className="text-center text-slate-400 text-sm mt-10">Wie kann ich Ihnen heute helfen?</p>
+                    )}
+                    {chatMessages.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] p-4 rounded-2xl ${
+                          msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-100 shadow-sm'
+                        } text-sm`}>
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))}
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-white border border-slate-100 p-3 rounded-2xl rounded-tl-none flex gap-1 shadow-sm">
+                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
+                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+
+                  <form onSubmit={handleChatSubmit} className="p-4 bg-white border-t border-slate-100 flex gap-2">
+                    <input 
+                      type="text" 
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder="Ihre Frage..."
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={!userInput.trim() || isTyping}
+                      className="bg-blue-600 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 shadow-md transition-all"
+                    >
+                      <i className="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                  </form>
+                </div>
+              )}
+              
+              <button 
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 pointer-events-auto transform hover:scale-110 active:scale-95 ${
+                  isChatOpen ? 'bg-slate-800 rotate-90' : 'bg-blue-600 animate-pulse-slow'
+                }`}
+              >
+                <i className={`fa-solid ${isChatOpen ? 'fa-xmark' : 'fa-robot'} text-2xl`}></i>
+              </button>
             </div>
           </section>
         )}
@@ -285,10 +374,10 @@ const App: React.FC = () => {
             <div className="bg-blue-600 p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md text-white">
-                  <i className="fa-solid fa-broom text-xl"></i>
+                  <i className="fa-solid fa-screwdriver-wrench text-xl"></i>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Stielke Berater</h3>
+                  <h3 className="font-bold text-lg">Stielke Berater Fullscreen</h3>
                   <p className="text-xs opacity-75 flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                     Online & Hilfsbereit
@@ -325,6 +414,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
+              <div ref={chatEndRef} />
             </div>
 
             <form onSubmit={handleChatSubmit} className="p-6 bg-white border-t border-slate-100 flex gap-4">
@@ -379,6 +469,12 @@ const App: React.FC = () => {
                     <a href="mailto:kontakt@allroundservicestielke.de" className="text-blue-600 font-bold hover:underline break-all">kontakt@allroundservicestielke.de</a>
                   </div>
                 </div>
+                
+                {/* Mobile version display */}
+                <div className="pt-4 border-t border-slate-50 flex items-center gap-2 opacity-40">
+                  <i className="fa-solid fa-code-branch text-[10px]"></i>
+                  <span className="text-[10px] font-bold tracking-widest uppercase">Version {APP_VERSION}</span>
+                </div>
               </div>
 
               <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100">
@@ -425,18 +521,26 @@ const App: React.FC = () => {
           </div>
         </div>
         <p className="text-slate-400 text-sm">&copy; 2024 Allround Service Stielke. Alle Rechte vorbehalten.</p>
-        <div className="flex justify-center gap-8 mt-4">
+        <div className="flex justify-center gap-8 mt-4 items-center">
           <a href="#" className="text-slate-400 hover:text-blue-600 transition-colors font-medium">Impressum</a>
           <a href="#" className="text-slate-400 hover:text-blue-600 transition-colors font-medium">Datenschutz</a>
+          <span className="text-[10px] text-slate-300 font-bold border border-slate-200 px-2 py-0.5 rounded-full">v{APP_VERSION}</span>
         </div>
       </footer>
 
       <style>{`
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse-slow { 
+          0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
+          50% { transform: scale(1.05); box-shadow: 0 15px 45px rgba(37, 99, 235, 0.5); }
+        }
         .animate-fade-in { animation: fade-in 0.8s ease-out; }
-        .animate-slide-up { animation: slide-up 0.5s ease-out; }
+        .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
         body { background-color: #f8fafc; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
   );
