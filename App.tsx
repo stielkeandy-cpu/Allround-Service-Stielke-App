@@ -1,453 +1,112 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Navigation from './components/Navigation';
-import { ServiceType, BookingRequest } from './types';
+import { ServiceType } from './types';
 import { getGeminiResponse } from './services/geminiService';
 
-const APP_VERSION = "1.5.0"; // Enhanced UI for Hours
-const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/u/0/appointments/schedules/YOUR_SCHEDULE_ID"; 
 const PHONE_NUMBER = "015123556495";
+const WHATSAPP_NUMBER = "4915123556495";
+
+const Logo: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`flex flex-col leading-none items-center md:items-start ${className}`}>
+    <div className="flex items-center gap-2">
+      <span className="text-slate-900 font-black tracking-tighter text-2xl md:text-3xl uppercase">Allround Service</span>
+    </div>
+    <div className="flex items-center gap-2 mt-1">
+      <div className="h-1 w-8 bg-blue-600 rounded-full"></div>
+      <span className="text-blue-600 font-black text-sm md:text-lg tracking-[0.4em] uppercase">Stielke</span>
+    </div>
+  </div>
+);
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  
-  // Booking States
-  const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedService, setSelectedService] = useState<ServiceType>(ServiceType.GARDENING);
-  const [bookingDesc, setBookingDesc] = useState('');
-  const [bookingDate, setBookingDate] = useState('');
-  const [bookings, setBookings] = useState<BookingRequest[]>([]);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  // Contact States
-  const [contactName, setContactName] = useState('');
-  const [contactMessage, setContactMessage] = useState('');
-  const [contactError, setContactError] = useState<string | null>(null);
-  const [formAttempted, setFormAttempted] = useState(false);
-
-  // Opening Hours Data
-  const openingHours = [
-    { day: "Montag", time: "08:00 - 18:00", index: 1 },
-    { day: "Dienstag", time: "08:00 - 18:00", index: 2 },
-    { day: "Mittwoch", time: "08:00 - 18:00", index: 3 },
-    { day: "Donnerstag", time: "08:00 - 18:00", index: 4 },
-    { day: "Freitag", time: "08:00 - 18:00", index: 5 },
-    { day: "Samstag", time: "09:00 - 14:00", index: 6 },
-    { day: "Sonntag", time: "Geschlossen", index: 0 },
-  ];
-
-  const getOpeningStatus = () => {
-    const now = new Date();
-    const day = now.getDay(); 
-    const hour = now.getHours();
-    
-    if (day >= 1 && day <= 5) {
-      return hour >= 8 && hour < 18;
-    } else if (day === 6) {
-      return hour >= 9 && hour < 14;
-    }
-    return false;
-  };
-
-  const services = [
-    { type: ServiceType.GARDENING, title: 'Gartenpflege', desc: 'Rasenmähen, Heckenschnitt und Beetpflege für einen traumhaften Garten.', icon: 'fa-seedling', color: 'bg-green-100 text-green-600', accent: 'border-green-200' },
-    { type: ServiceType.REPAIR, title: 'Hausmeisterservice', desc: 'Regelmäßige Kontrolle und Wartung Ihrer Immobilie.', icon: 'fa-screwdriver-wrench', color: 'bg-blue-100 text-blue-600', accent: 'border-blue-200' },
-    { type: ServiceType.RENOVATION, title: 'Renovierung', desc: 'Malerarbeiten, Bodenlegen und kleine Trockenbau-Projekte.', icon: 'fa-brush', color: 'bg-orange-100 text-orange-600', accent: 'border-orange-200' },
-    { type: ServiceType.CLEANING, title: 'Reinigung', desc: 'Gründliche Treppenhaus- und Fensterreinigung.', icon: 'fa-soap', color: 'bg-purple-100 text-purple-600', accent: 'border-purple-200' }
-  ];
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isTyping]);
+
+  const handleWhatsAppOpen = (msg?: string) => {
+    const text = msg || "Ich habe eine Anfrage über die App.";
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
+  };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput.trim()) return;
-
-    const userMsg = userInput;
-    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    if (!userInput.trim() || isTyping) return;
+    const msg = userInput;
+    setChatMessages(prev => [...prev, { role: 'user', text: msg }]);
     setUserInput('');
     setIsTyping(true);
-
-    const response = await getGeminiResponse(userMsg);
+    const response = await getGeminiResponse(msg);
     setChatMessages(prev => [...prev, { role: 'model', text: response }]);
     setIsTyping(false);
   };
 
-  const openBooking = (type: ServiceType) => {
-    setSelectedService(type);
-    setShowBookingForm(true);
-    setActiveTab('services');
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleBookingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newBooking: BookingRequest = {
-      id: Math.random().toString(36).substr(2, 9),
-      serviceType: selectedService,
-      description: bookingDesc,
-      date: bookingDate,
-      status: 'pending'
-    };
-    
-    setBookings(prev => [...prev, newBooking]);
-    setShowSuccess(true);
-    setShowBookingForm(false);
-    
-    const subject = encodeURIComponent(`Service-Anfrage: ${selectedService} (App v${APP_VERSION})`);
-    const body = encodeURIComponent(`Hallo Allround Service Stielke,\n\nich möchte folgende Leistung anfragen:\n\nService: ${selectedService}\nDatum: ${bookingDate}\nBeschreibung: ${bookingDesc}\n\nBitte um Rückmeldung.\n\n---\nGesendet via App v${APP_VERSION}`);
-    
-    window.location.href = `mailto:kontakt@allroundservicestielke.de?subject=${subject}&body=${body}`;
-    
-    setBookingDesc('');
-    setBookingDate('');
-    setTimeout(() => setShowSuccess(false), 8000);
-  };
-
-  const handleCalendarOpen = () => {
-    window.open(GOOGLE_CALENDAR_URL, '_blank');
-  };
-
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormAttempted(true);
-    
-    if (!contactName.trim() || !contactMessage.trim()) {
-      setContactError("Bitte füllen Sie beide Felder aus.");
-      return;
-    }
-
-    setContactError(null);
-    const subject = encodeURIComponent(`Allround Service Stielke - Kontaktanfrage`);
-    const body = encodeURIComponent(`Name: ${contactName}\n\nNachricht:\n${contactMessage}\n\n---\nGesendet via App v${APP_VERSION}`);
-    window.location.href = `mailto:kontakt@allroundservicestielke.de?subject=${subject}&body=${body}`;
-  };
+  const services = [
+    { type: ServiceType.GARDENING, title: 'Gartenpflege', desc: 'Rasenmähen, Heckenschnitt und Beetpflege.', icon: 'fa-seedling', color: 'bg-green-100 text-green-600' },
+    { type: ServiceType.REPAIR, title: 'Hausmeister', desc: 'Kontrolle und Wartung Ihrer Immobilie.', icon: 'fa-screwdriver-wrench', color: 'bg-blue-100 text-blue-600' },
+    { type: ServiceType.RENOVATION, title: 'Renovierung', desc: 'Malerarbeiten und kleine Projekte.', icon: 'fa-brush', color: 'bg-orange-100 text-orange-600' },
+    { type: ServiceType.CLEANING, title: 'Reinigung', desc: 'Gründliche Treppenhausreinigung.', icon: 'fa-soap', color: 'bg-purple-100 text-purple-600' }
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col pb-20 md:pb-0 md:pt-20">
+    <div className="min-h-screen flex flex-col pb-24 md:pb-0 md:pt-24 bg-slate-50">
       <Navigation currentTab={activeTab} setTab={setActiveTab} />
       
       <main className="flex-1 max-w-5xl mx-auto w-full p-4">
-        {showSuccess && (
-          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] bg-white border border-green-100 px-6 py-4 rounded-3xl shadow-2xl flex flex-col items-center gap-2 animate-bounce">
-            <div className="flex items-center gap-3 text-green-600 font-bold">
-              <i className="fa-solid fa-circle-check text-2xl"></i>
-              <span>E-Mail Entwurf wurde erstellt!</span>
-            </div>
-            <p className="text-xs text-slate-500 text-center">Sollte sich Ihr E-Mail Programm nicht geöffnet haben, senden Sie uns bitte direkt eine Nachricht an kontakt@allroundservicestielke.de</p>
-          </div>
-        )}
-
+        
         {activeTab === 'home' && (
-          <section className="animate-fade-in space-y-10 relative">
-            <div className="relative h-[450px] md:h-[550px] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center justify-center p-6 text-center border-4 border-white">
-              <img src="https://images.unsplash.com/photo-1581578731522-745d05cb972b?auto=format&fit=crop&q=80&w=1200" className="absolute inset-0 w-full h-full object-cover" alt="Service background" />
-              <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/50 to-slate-900/85"></div>
-              
-              <div className="relative z-10 flex flex-col items-center max-w-3xl">
-                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] mb-8 transform hover:scale-105 transition-all duration-500 border border-slate-100 flex flex-col items-center">
-                  <div className="w-16 h-16 md:w-24 md:h-24 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-xl shadow-blue-200">
-                    <i className="fa-solid fa-screwdriver-wrench text-3xl md:text-5xl"></i>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">Allround Service</span>
-                    <span className="text-sm md:text-lg font-bold text-blue-600 uppercase tracking-widest mt-1">Stielke</span>
-                  </div>
+          <section className="animate-fade-in space-y-8">
+            <div className="relative h-[450px] md:h-[600px] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center justify-center p-6 text-center">
+              <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1200" className="absolute inset-0 w-full h-full object-cover" alt="Hero" />
+              <div className="absolute inset-0 bg-slate-900/60"></div>
+              <div className="relative z-10 space-y-6">
+                <div className="bg-white/95 p-8 rounded-[2.5rem] inline-block mb-4 shadow-xl">
+                  <Logo />
                 </div>
-                
-                <h1 className="text-3xl md:text-6xl font-black mb-4 text-white drop-shadow-2xl tracking-tight">
-                  Ihr Partner in <span className="text-blue-400">Salzatal</span>
-                </h1>
-                <p className="text-base md:text-xl text-blue-50 opacity-95 mb-8 max-w-2xl font-medium">
-                  Professionelle Haus- und Gartenpflege aus einer Hand.
-                </p>
-
-                <div className="flex flex-wrap justify-center gap-4">
-                  <button 
-                    onClick={() => setActiveTab('services')}
-                    className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
-                  >
-                    <i className="fa-solid fa-calendar-days"></i>
-                    Termin buchen
-                  </button>
-                  <a 
-                    href={`tel:${PHONE_NUMBER}`}
-                    className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 border-2 border-blue-500"
-                  >
-                    <i className="fa-solid fa-phone"></i>
-                    Jetzt Anrufen
+                <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter">Profi-Service <br/>aus Salzatal</h1>
+                <div className="flex flex-col md:flex-row gap-4 justify-center">
+                  <button onClick={() => setActiveTab('services')} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl active:scale-95 transition-transform">Leistungen</button>
+                  <a href={`tel:${PHONE_NUMBER}`} className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                    <i className="fa-solid fa-phone"></i> Anrufen
                   </a>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Schnellzugriff</h2>
-              <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4">
-                {services.map((s, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => openBooking(s.type)}
-                    className={`flex-shrink-0 w-40 md:w-full bg-white p-5 rounded-[2rem] border-2 ${s.accent} shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center gap-3 group`}
-                  >
-                    <div className={`w-12 h-12 ${s.color} rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform`}>
-                      <i className={`fa-solid ${s.icon}`}></i>
-                    </div>
-                    <span className="font-bold text-slate-700 text-sm">{s.title} anfragen</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {services.map((s, idx) => (
-                <div key={idx} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300">
-                  <div className={`w-14 h-14 ${s.color} rounded-2xl flex items-center justify-center mb-6 text-2xl shadow-inner`}>
-                    <i className={`fa-solid ${s.icon}`}></i>
-                  </div>
-                  <h3 className="font-bold text-xl mb-3 text-slate-800">{s.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">{s.desc}</p>
-                </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {services.map((s, i) => (
+                <button key={i} onClick={() => { setSelectedService(s.type); setActiveTab('services'); }} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center gap-3 active:scale-95 transition-transform">
+                  <div className={`w-12 h-12 ${s.color} rounded-xl flex items-center justify-center text-xl shadow-inner`}><i className={`fa-solid ${s.icon}`}></i></div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">{s.title}</span>
+                </button>
               ))}
-            </div>
-
-            <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end gap-4 pointer-events-none">
-              {isChatOpen && (
-                <div className="w-[calc(100vw-3rem)] md:w-96 h-[500px] bg-slate-50 rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-100 flex flex-col overflow-hidden animate-slide-up pointer-events-auto mb-2">
-                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 text-white flex items-center justify-between shadow-md">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10">
-                        <i className="fa-solid fa-robot"></i>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm">KI-Helfer</span>
-                        <span className="text-[10px] opacity-80 uppercase tracking-widest font-bold">Stielke Service</span>
-                      </div>
-                    </div>
-                    <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/10 w-8 h-8 rounded-full transition-colors flex items-center justify-center">
-                      <i className="fa-solid fa-minus"></i>
-                    </button>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                    {chatMessages.length === 0 && (
-                      <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-40">
-                         <i className="fa-solid fa-message-dots text-3xl mb-3"></i>
-                         <p className="text-sm">Haben Sie eine Frage zu unseren Leistungen? Ich helfe Ihnen gerne weiter.</p>
-                      </div>
-                    )}
-                    {chatMessages.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${
-                          msg.role === 'user' 
-                            ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none' 
-                            : 'bg-white text-slate-800 rounded-tl-none border border-slate-200/50'
-                        } text-sm leading-relaxed`}>
-                          {msg.text}
-                        </div>
-                      </div>
-                    ))}
-                    {isTyping && (
-                      <div className="flex justify-start">
-                        <div className="bg-white border border-slate-200/50 p-3 rounded-2xl rounded-tl-none flex gap-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
-                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={chatEndRef} />
-                  </div>
-
-                  <form onSubmit={handleChatSubmit} className="p-4 bg-white border-t border-slate-100 flex gap-2">
-                    <input 
-                      type="text" 
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      placeholder="Ihre Nachricht..."
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all"
-                    />
-                    <button 
-                      type="submit"
-                      disabled={!userInput.trim() || isTyping}
-                      className="bg-blue-600 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 shadow-md transition-all active:scale-90"
-                    >
-                      <i className="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
-                  </form>
-                </div>
-              )}
-              
-              <button 
-                onClick={() => setIsChatOpen(!isChatOpen)}
-                className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-2xl transition-all duration-500 pointer-events-auto transform hover:scale-110 active:scale-95 ${
-                  isChatOpen ? 'bg-slate-800 rotate-90' : 'bg-blue-600 animate-pulse-slow'
-                }`}
-              >
-                <i className={`fa-solid ${isChatOpen ? 'fa-xmark' : 'fa-robot'} text-2xl`}></i>
-              </button>
             </div>
           </section>
         )}
 
         {activeTab === 'services' && (
-          <section className="space-y-8 animate-fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-              <div>
-                <h2 className="text-3xl font-bold text-slate-800">Termin & Buchung</h2>
-                <p className="text-slate-500 mt-2">Buchen Sie direkt online oder senden Sie uns eine Anfrage.</p>
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={handleCalendarOpen}
-                  className="bg-slate-800 text-white px-6 py-3 rounded-2xl font-bold hover:bg-slate-900 transition-all flex items-center gap-2 shadow-lg"
-                >
-                  <i className="fa-solid fa-calendar-check"></i>
-                  Direkt-Termin
-                </button>
-                {!showBookingForm && (
-                  <button 
-                    onClick={() => setShowBookingForm(true)}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-200"
-                  >
-                    <i className="fa-solid fa-paper-plane"></i>
-                    Anfrage senden
-                  </button>
-                )}
-              </div>
+          <section className="space-y-6 animate-fade-in pb-10">
+            <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl">
+              <h2 className="text-2xl font-black uppercase tracking-tight">Unsere Leistungen</h2>
+              <p className="opacity-80 text-sm">Qualität und Zuverlässigkeit für Ihr Objekt.</p>
             </div>
 
-            {showBookingForm && (
-              <div className="bg-white rounded-[2.5rem] shadow-2xl border border-blue-50 p-6 md:p-10 animate-slide-up relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-                <div className="flex justify-between items-center mb-8">
-                  <div className="flex flex-col">
-                    <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
-                        <i className="fa-solid fa-envelope"></i>
-                      </div>
-                      Service anfragen
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1 ml-13">Per E-Mail Entwurf</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {services.map((s, i) => (
+                <div key={i} className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 ${s.color} rounded-xl flex items-center justify-center text-xl`}><i className={`fa-solid ${s.icon}`}></i></div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">{s.title}</h3>
                   </div>
-                  <button onClick={() => setShowBookingForm(false)} className="bg-slate-50 text-slate-400 hover:text-slate-600 p-3 rounded-full transition-colors">
-                    <i className="fa-solid fa-xmark text-xl"></i>
-                  </button>
-                </div>
-                
-                <form onSubmit={handleBookingSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">LEISTUNG</label>
-                    <select 
-                      value={selectedService}
-                      onChange={(e) => setSelectedService(e.target.value as ServiceType)}
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium"
-                      required
-                    >
-                      {Object.values(ServiceType).map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">TERMINWUNSCH</label>
-                    <input 
-                      type="date"
-                      value={bookingDate}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-3 md:col-span-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">BESCHREIBUNG</label>
-                    <textarea 
-                      value={bookingDesc}
-                      onChange={(e) => setBookingDesc(e.target.value)}
-                      placeholder="Was können wir für Sie tun?"
-                      rows={5}
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all resize-none font-medium"
-                      required
-                    ></textarea>
-                  </div>
-
-                  <div className="md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-slate-50">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-3 text-slate-600 font-bold text-sm">
-                        <i className="fa-solid fa-calendar-check text-blue-600"></i>
-                        <span>Alternative: Google Kalender</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Direkte Terminbuchung ohne Wartezeit.</p>
-                    </div>
-                    <div className="flex gap-4 w-full md:w-auto">
-                      <button 
-                        type="button"
-                        onClick={handleCalendarOpen}
-                        className="flex-1 md:flex-none px-6 py-4 rounded-2xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <i className="fa-brands fa-google"></i>
-                        Kalender
-                      </button>
-                      <button 
-                        type="submit"
-                        className="flex-2 md:flex-none bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3"
-                      >
-                        <i className="fa-solid fa-envelope-open-text"></i>
-                        E-Mail Entwurf
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {services.map((s, idx) => (
-                <div key={idx} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 flex flex-col group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
-                  <div className="relative h-56 overflow-hidden">
-                    <img src={`https://picsum.photos/seed/${s.title}/800/600`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={s.title} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className={`absolute top-6 left-6 ${s.color} px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-lg`}>
-                      QUALITÄT
-                    </div>
-                  </div>
-                  <div className="p-8 flex-1 flex flex-col">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`w-12 h-12 ${s.color} rounded-xl flex items-center justify-center text-xl shadow-inner`}>
-                        <i className={`fa-solid ${s.icon}`}></i>
-                      </div>
-                      <h3 className="text-2xl font-bold text-slate-800">{s.title}</h3>
-                    </div>
-                    <p className="text-slate-500 mb-8 flex-1 leading-relaxed">{s.desc}</p>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={handleCalendarOpen}
-                        className="flex-1 bg-slate-800 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-slate-900 shadow-md"
-                        title="Direkt im Google Kalender buchen"
-                      >
-                        <i className="fa-solid fa-calendar-check"></i>
-                        Termin
-                      </button>
-                      <button 
-                        onClick={() => openBooking(s.type)}
-                        className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-blue-700 shadow-md shadow-blue-100"
-                      >
-                        Anfrage
-                      </button>
-                    </div>
-                  </div>
+                  <p className="text-slate-500 text-sm">{s.desc}</p>
+                  <button onClick={() => handleWhatsAppOpen(`Ich habe eine Anfrage zu: ${s.title}`)} className="mt-2 text-blue-600 font-black uppercase text-[10px] tracking-widest flex items-center gap-2">Jetzt anfragen <i className="fa-solid fa-arrow-right"></i></button>
                 </div>
               ))}
             </div>
@@ -455,277 +114,133 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'assistant' && (
-          <section className="h-[calc(100vh-12rem)] flex flex-col bg-slate-50 rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-fade-in">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white flex items-center justify-between shadow-lg">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md text-white border border-white/10">
-                  <i className="fa-solid fa-screwdriver-wrench text-2xl"></i>
+          <section className="h-[calc(100vh-16rem)] bg-white rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col overflow-hidden animate-fade-in">
+            <div className="bg-slate-900 p-6 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                  <i className="fa-solid fa-robot text-sm"></i>
                 </div>
-                <div>
-                  <h3 className="font-bold text-xl leading-tight">Stielke Berater</h3>
-                  <p className="text-xs opacity-80 flex items-center gap-1.5 mt-1">
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
-                    KI-Assistent ist bereit
-                  </p>
-                </div>
+                <span className="font-black text-xs uppercase tracking-widest">KI-Fachberater</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Online</span>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
               {chatMessages.length === 0 && (
-                <div className="text-center py-20">
-                  <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform">
-                    <i className="fa-solid fa-comments text-3xl"></i>
-                  </div>
-                  <h4 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Wie kann ich Ihnen helfen?</h4>
-                  <p className="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">Fragen Sie mich nach Preisen, freien Terminen oder speziellen Leistungen von Allround Service Stielke.</p>
+                <div className="flex flex-col items-center justify-center h-full text-center py-10 opacity-30">
+                   <i className="fa-solid fa-comments text-4xl mb-4"></i>
+                   <p className="font-bold uppercase text-xs tracking-[0.2em]">Wie kann ich Ihnen heute helfen?</p>
                 </div>
               )}
               {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-slide-up`}>
-                  <div className={`max-w-[85%] md:max-w-[70%] p-5 rounded-[2rem] shadow-sm ${
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
                     msg.role === 'user' 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none shadow-blue-100' 
-                      : 'bg-white text-slate-800 rounded-tl-none border border-slate-200/50'
-                  } leading-relaxed`}>
-                    <p className="text-sm md:text-base">{msg.text}</p>
+                      ? 'bg-blue-600 text-white shadow-lg rounded-tr-none' 
+                      : 'bg-white text-slate-800 border border-slate-100 shadow-sm rounded-tl-none'
+                  }`}>
+                    {msg.text}
                   </div>
                 </div>
               ))}
+              
               {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-slate-200/50 p-5 rounded-3xl rounded-tl-none flex gap-2 shadow-sm">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                <div className="flex justify-start animate-fade-in">
+                  <div className="bg-white text-slate-800 border border-slate-100 shadow-sm p-4 rounded-2xl rounded-tl-none flex items-center gap-1">
+                    <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce"></div>
                   </div>
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
 
-            <form onSubmit={handleChatSubmit} className="p-6 bg-white border-t border-slate-100 flex gap-4">
-              <input 
-                type="text" 
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                placeholder="Ihre Nachricht an uns..."
-                className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium text-slate-700"
-              />
-              <button 
-                type="submit"
-                disabled={!userInput.trim() || isTyping}
-                className="bg-blue-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 shadow-xl shadow-blue-100 transition-all hover:scale-105 active:scale-95"
-              >
-                <i className="fa-solid fa-paper-plane text-xl"></i>
-              </button>
-            </form>
+            <div className="relative">
+              {isTyping && (
+                <div className="absolute -top-8 left-6 text-[9px] font-black text-blue-600 uppercase tracking-widest animate-pulse">
+                  Stielke Assistent denkt nach...
+                </div>
+              )}
+              <form onSubmit={handleChatSubmit} className="p-4 bg-white border-t flex gap-2 items-center">
+                <input 
+                  type="text" 
+                  value={userInput} 
+                  onChange={(e) => setUserInput(e.target.value)} 
+                  disabled={isTyping}
+                  placeholder={isTyping ? "Bitte warten..." : "Ihre Frage..."} 
+                  className={`flex-1 bg-slate-100 rounded-xl px-4 py-3 outline-none transition-opacity ${isTyping ? 'opacity-50' : 'opacity-100'}`} 
+                />
+                <button 
+                  type="submit" 
+                  disabled={isTyping || !userInput.trim()}
+                  className={`bg-blue-600 text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 ${isTyping || !userInput.trim() ? 'opacity-50 grayscale' : 'hover:bg-blue-700'}`}
+                >
+                  <i className="fa-solid fa-paper-plane"></i>
+                </button>
+              </form>
+            </div>
           </section>
         )}
 
         {activeTab === 'contact' && (
-          <section className="space-y-8 animate-fade-in pb-12">
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-                <div>
-                  <h2 className="text-4xl font-black text-slate-800 tracking-tight">Kontakt & Erreichbarkeit</h2>
-                  <p className="text-slate-500 mt-2">Wir sind im gesamten Salzatal für Sie im Einsatz.</p>
-                </div>
-                <div className={`px-5 py-2.5 rounded-full flex items-center gap-3 font-black text-sm uppercase tracking-widest shadow-lg ${getOpeningStatus() ? 'bg-green-600 text-white shadow-green-100' : 'bg-red-600 text-white shadow-red-100'}`}>
-                   <span className={`w-2.5 h-2.5 rounded-full bg-white ${getOpeningStatus() ? 'animate-pulse' : ''}`}></span>
-                   {getOpeningStatus() ? 'Jetzt geöffnet' : 'Derzeit geschlossen'}
+          <section className="space-y-8 animate-fade-in pb-10">
+            <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 space-y-12 text-center md:text-left">
+              <Logo className="mx-auto md:mx-0" />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
+                <a href={`tel:${PHONE_NUMBER}`} className="flex items-center gap-5 p-6 bg-blue-50 rounded-2xl border border-blue-100 active:scale-95 transition-transform">
+                  <div className="w-14 h-14 bg-white text-blue-600 rounded-xl flex items-center justify-center shadow-sm"><i className="fa-solid fa-phone text-xl"></i></div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Anrufen</p>
+                    <p className="font-black text-slate-800">{PHONE_NUMBER}</p>
+                  </div>
+                </a>
+                <button onClick={() => handleWhatsAppOpen()} className="flex items-center gap-5 p-6 bg-green-50 rounded-2xl border border-green-100 active:scale-95 transition-transform text-left w-full">
+                  <div className="w-14 h-14 bg-white text-green-600 rounded-xl flex items-center justify-center shadow-sm"><i className="fa-brands fa-whatsapp text-2xl"></i></div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">WhatsApp</p>
+                    <p className="font-black text-slate-800">Schnellanfrage</p>
+                  </div>
+                </button>
+                <div className="flex items-center gap-5 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-14 h-14 bg-white text-slate-600 rounded-xl flex items-center justify-center shadow-sm"><i className="fa-solid fa-location-dot text-xl"></i></div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Standort</p>
+                    <p className="font-black text-slate-800">06198 Salzatal</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                <div className="space-y-8">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Kontaktdaten</h3>
-                  <div className="flex items-start gap-5 group">
-                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                      <i className="fa-solid fa-location-dot text-xl"></i>
-                    </div>
-                    <div>
-                      <h4 className="font-black text-slate-400 text-[10px] uppercase tracking-widest mb-1">Anschrift</h4>
-                      <p className="text-slate-700 font-bold">Naundorfer Weg 4</p>
-                      <p className="text-slate-500 text-sm">06198 Salzatal</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-5 group">
-                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                      <i className="fa-solid fa-phone text-xl"></i>
-                    </div>
-                    <div>
-                      <h4 className="font-black text-slate-400 text-[10px] uppercase tracking-widest mb-1">Telefon</h4>
-                      <a href={`tel:${PHONE_NUMBER}`} className="text-slate-700 font-bold hover:text-blue-600 transition-colors">{PHONE_NUMBER}</a>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-5 group">
-                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                      <i className="fa-solid fa-envelope text-xl"></i>
-                    </div>
-                    <div>
-                      <h4 className="font-black text-slate-400 text-[10px] uppercase tracking-widest mb-1">E-Mail</h4>
-                      <a href="mailto:kontakt@allroundservicestielke.de" className="text-blue-600 font-bold hover:underline break-all text-sm">kontakt@allroundservicestielke.de</a>
-                    </div>
-                  </div>
+              <div className="bg-slate-900 text-white rounded-[2rem] p-8 space-y-4 max-w-md mx-auto md:mx-0">
+                <h3 className="font-black uppercase tracking-widest text-xs text-blue-400 text-center mb-4">Erreichbarkeit</h3>
+                <div className="flex justify-between text-xs uppercase tracking-wider">
+                  <span>Montag - Freitag</span>
+                  <span>08:00 - 18:00 Uhr</span>
                 </div>
-
-                {/* VISUALLY ENHANCED OPENING HOURS TIMELINE */}
-                <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 relative">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Service-Zeiten</h3>
-                  <div className="space-y-4 relative">
-                    {/* Vertical line connector */}
-                    <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-200"></div>
-                    
-                    {openingHours.map((item, idx) => {
-                      const isToday = new Date().getDay() === item.index;
-                      const isClosed = item.time === "Geschlossen";
-                      
-                      return (
-                        <div key={idx} className={`relative flex items-center gap-6 p-2 rounded-2xl transition-all ${isToday ? 'bg-white shadow-md border border-blue-50 scale-[1.03] z-10' : 'opacity-70'}`}>
-                          <div className={`w-6 h-6 rounded-full border-4 border-slate-50 relative z-10 shrink-0 ${
-                            isToday ? 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.4)]' : (isClosed ? 'bg-slate-300' : 'bg-slate-400')
-                          }`}></div>
-                          <div className="flex-1 flex justify-between items-center">
-                            <div className="flex flex-col">
-                              <span className={`text-sm font-black ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>{item.day}</span>
-                              {isToday && <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Heute</span>}
-                            </div>
-                            <span className={`text-xs font-bold ${isClosed ? 'text-slate-400 italic' : 'text-slate-600'}`}>
-                              {item.time}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Direkt-Aktionen</h3>
-                  <a 
-                    href={`tel:${PHONE_NUMBER}`}
-                    className="flex-1 bg-blue-600 text-white rounded-[2rem] p-8 flex flex-col items-center justify-center text-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 group"
-                  >
-                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-1 group-hover:scale-110 transition-transform backdrop-blur-md">
-                      <i className="fa-solid fa-phone-volume text-3xl"></i>
-                    </div>
-                    <span className="font-black text-xl uppercase tracking-tight">Jetzt Anrufen</span>
-                    <p className="text-[10px] opacity-80 max-w-[150px] font-medium leading-tight">Schnelle Hilfe bei Reparaturen & Notfällen</p>
-                  </a>
-                  <button 
-                    onClick={handleCalendarOpen}
-                    className="flex-1 bg-slate-800 text-white rounded-[2rem] p-8 flex flex-col items-center justify-center text-center gap-3 hover:bg-slate-900 transition-all shadow-xl shadow-slate-200"
-                  >
-                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-1">
-                      <i className="fa-solid fa-calendar-check text-3xl"></i>
-                    </div>
-                    <span className="font-black text-xl uppercase tracking-tight">Termin Online</span>
-                    <p className="text-[10px] opacity-80 max-w-[150px] font-medium leading-tight">Buchen Sie bequem über Google Kalender</p>
-                  </button>
+                <div className="flex justify-between text-xs uppercase tracking-wider text-slate-400">
+                  <span>Samstag</span>
+                  <span>Nach Vereinbarung</span>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100">
-              <div className="max-w-xl mx-auto text-center">
-                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <i className="fa-solid fa-paper-plane text-2xl"></i>
-                </div>
-                <h4 className="font-black text-slate-800 text-2xl mb-2">E-Mail Nachricht senden</h4>
-                <p className="text-slate-500 text-sm mb-10 leading-relaxed">Beschreiben Sie kurz Ihr Anliegen und wir bereiten einen fertigen E-Mail Entwurf für Sie vor.</p>
-                
-                <div className="space-y-4 text-left">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ihr Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="Vorname Nachname" 
-                      value={contactName}
-                      onChange={(e) => {
-                        setContactName(e.target.value);
-                        if (e.target.value.trim()) setContactError(null);
-                      }}
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium ${
-                        formAttempted && !contactName.trim() ? 'border-red-400 animate-shake' : 'border-slate-100'
-                      }`} 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nachricht</label>
-                    <textarea 
-                      placeholder="Was können wir für Sie im Salzatal tun?" 
-                      rows={4} 
-                      value={contactMessage}
-                      onChange={(e) => {
-                        setContactMessage(e.target.value);
-                        if (e.target.value.trim()) setContactError(null);
-                      }}
-                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none resize-none font-medium transition-all ${
-                        formAttempted && !contactMessage.trim() ? 'border-red-400 animate-shake' : 'border-slate-100'
-                      }`}
-                    ></textarea>
-                  </div>
-                  
-                  {contactError && (
-                    <div className="bg-red-50 text-red-500 p-4 rounded-2xl flex items-center gap-3 animate-fade-in border border-red-100">
-                      <i className="fa-solid fa-circle-exclamation"></i>
-                      <span className="text-xs font-bold">{contactError}</span>
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={handleContactSubmit}
-                    className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-4 shadow-xl shadow-blue-100 active:scale-95 uppercase tracking-widest"
-                  >
-                    <i className="fa-solid fa-envelope-circle-check text-xl"></i>
-                    Entwurf erstellen
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-center opacity-30 py-8 flex flex-col items-center gap-2">
-              <i className="fa-solid fa-shield-check text-xs"></i>
-              <span className="text-[9px] font-black tracking-[0.4em] uppercase">Allround Service Stielke App v{APP_VERSION}</span>
             </div>
           </section>
         )}
       </main>
 
-      <footer className="hidden md:block py-16 text-center border-t border-slate-100 mt-12">
-        <div className="max-w-xs mx-auto mb-8 opacity-20 grayscale hover:grayscale-0 transition-all duration-500">
-          <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center text-white mx-auto">
-            <i className="fa-solid fa-broom text-lg"></i>
-          </div>
-        </div>
-        <p className="text-slate-400 text-xs">&copy; 2024 Allround Service Stielke. Lokaler Service für das Salzatal.</p>
-        <div className="flex justify-center gap-8 mt-4 items-center">
-          <a href="#" className="text-slate-400 hover:text-blue-600 transition-colors text-xs font-bold uppercase tracking-widest">Impressum</a>
-          <a href="#" className="text-slate-400 hover:text-blue-600 transition-colors text-xs font-bold uppercase tracking-widest">Datenschutz</a>
-        </div>
-      </footer>
+      {/* Floating Action WhatsApp */}
+      <div className="fixed bottom-28 right-6 z-40">
+        <button 
+          onClick={() => handleWhatsAppOpen()} 
+          className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-transform"
+        >
+          <i className="fa-brands fa-whatsapp text-3xl"></i>
+        </button>
+      </div>
 
-      <style>{`
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes pulse-slow { 
-          0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); }
-          50% { transform: scale(1.05); box-shadow: 0 15px 45px rgba(37, 99, 235, 0.5); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        .animate-fade-in { animation: fade-in 0.8s ease-out; }
-        .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-        .animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
-        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
-        body { background-color: #f8fafc; overflow-x: hidden; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
     </div>
   );
 };
