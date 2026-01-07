@@ -4,7 +4,7 @@ import Navigation from './components/Navigation';
 import { ServiceType, BookingRequest } from './types';
 import { getGeminiResponse } from './services/geminiService';
 
-const APP_VERSION = "1.2.6"; // Update Icons
+const APP_VERSION = "1.2.7"; // Chat Design Update
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -170,35 +170,43 @@ const App: React.FC = () => {
             {/* Chatbot Toggle UI for Home */}
             <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end gap-4 pointer-events-none">
               {isChatOpen && (
-                <div className="w-[calc(100vw-3rem)] md:w-96 h-[500px] bg-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-100 flex flex-col overflow-hidden animate-slide-up pointer-events-auto mb-2">
-                  <div className="bg-blue-600 p-5 text-white flex items-center justify-between">
+                <div className="w-[calc(100vw-3rem)] md:w-96 h-[500px] bg-slate-50 rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-100 flex flex-col overflow-hidden animate-slide-up pointer-events-auto mb-2">
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 text-white flex items-center justify-between shadow-md">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
+                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10">
                         <i className="fa-solid fa-robot"></i>
                       </div>
-                      <span className="font-bold">Stielke KI-Helfer</span>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm">KI-Helfer</span>
+                        <span className="text-[10px] opacity-80 uppercase tracking-widest font-bold">Stielke Service</span>
+                      </div>
                     </div>
-                    <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/10 p-2 rounded-lg transition-colors">
+                    <button onClick={() => setIsChatOpen(false)} className="hover:bg-white/10 w-8 h-8 rounded-full transition-colors flex items-center justify-center">
                       <i className="fa-solid fa-minus"></i>
                     </button>
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/50">
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4">
                     {chatMessages.length === 0 && (
-                      <p className="text-center text-slate-400 text-sm mt-10">Wie kann ich Ihnen heute helfen?</p>
+                      <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-40">
+                         <i className="fa-solid fa-message-dots text-3xl mb-3"></i>
+                         <p className="text-sm">Haben Sie eine Frage zu unseren Leistungen? Ich helfe Ihnen gerne weiter.</p>
+                      </div>
                     )}
                     {chatMessages.map((msg, i) => (
                       <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] p-4 rounded-2xl ${
-                          msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-100 shadow-sm'
-                        } text-sm`}>
+                        <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${
+                          msg.role === 'user' 
+                            ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none' 
+                            : 'bg-white text-slate-800 rounded-tl-none border border-slate-200/50'
+                        } text-sm leading-relaxed`}>
                           {msg.text}
                         </div>
                       </div>
                     ))}
                     {isTyping && (
                       <div className="flex justify-start">
-                        <div className="bg-white border border-slate-100 p-3 rounded-2xl rounded-tl-none flex gap-1 shadow-sm">
+                        <div className="bg-white border border-slate-200/50 p-3 rounded-2xl rounded-tl-none flex gap-1.5 shadow-sm">
                           <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
                           <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                           <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
@@ -213,15 +221,15 @@ const App: React.FC = () => {
                       type="text" 
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
-                      placeholder="Ihre Frage..."
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                      placeholder="Ihre Nachricht..."
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all"
                     />
                     <button 
                       type="submit"
                       disabled={!userInput.trim() || isTyping}
-                      className="bg-blue-600 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 shadow-md transition-all"
+                      className="bg-blue-600 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 shadow-md transition-all active:scale-90"
                     >
-                      <i className="fa-solid fa-paper-plane text-sm"></i>
+                      <i className="fa-solid fa-paper-plane text-xs"></i>
                     </button>
                   </form>
                 </div>
@@ -370,44 +378,49 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'assistant' && (
-          <section className="h-[calc(100vh-12rem)] flex flex-col bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-fade-in">
-            <div className="bg-blue-600 p-6 text-white flex items-center justify-between">
+          <section className="h-[calc(100vh-12rem)] flex flex-col bg-slate-50 rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-fade-in">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white flex items-center justify-between shadow-lg">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md text-white">
-                  <i className="fa-solid fa-screwdriver-wrench text-xl"></i>
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md text-white border border-white/10">
+                  <i className="fa-solid fa-screwdriver-wrench text-2xl"></i>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Stielke Berater Fullscreen</h3>
-                  <p className="text-xs opacity-75 flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                    Online & Hilfsbereit
+                  <h3 className="font-bold text-xl leading-tight">Stielke Berater</h3>
+                  <p className="text-xs opacity-80 flex items-center gap-1.5 mt-1">
+                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
+                    KI-Assistent ist bereit
                   </p>
                 </div>
               </div>
+              <div className="hidden md:block">
+                <span className="text-[10px] font-bold uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full border border-white/5">Salzatal Region</span>
+              </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {chatMessages.length === 0 && (
                 <div className="text-center py-20">
-                  <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i className="fa-solid fa-comment-dots text-3xl"></i>
+                  <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform">
+                    <i className="fa-solid fa-comments text-3xl"></i>
                   </div>
-                  <h4 className="text-xl font-bold text-slate-800 mb-2">Wie kann ich helfen?</h4>
-                  <p className="text-slate-500 max-w-sm mx-auto">Fragen Sie nach unseren Preisen, freien Terminen oder speziellen Leistungen bei Allround Service Stielke.</p>
+                  <h4 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Wie kann ich Ihnen helfen?</h4>
+                  <p className="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">Fragen Sie mich nach Preisen, freien Terminen oder speziellen Leistungen von Allround Service Stielke.</p>
                 </div>
               )}
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-slide-up`}>
-                  <div className={`max-w-[85%] p-5 rounded-3xl shadow-sm ${
-                    msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
-                  }`}>
-                    <p className="leading-relaxed">{msg.text}</p>
+                  <div className={`max-w-[85%] md:max-w-[70%] p-5 rounded-[2rem] shadow-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none shadow-blue-100' 
+                      : 'bg-white text-slate-800 rounded-tl-none border border-slate-200/50'
+                  } leading-relaxed`}>
+                    <p className="text-sm md:text-base">{msg.text}</p>
                   </div>
                 </div>
               ))}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-slate-100 p-5 rounded-3xl rounded-tl-none flex gap-1.5 shadow-sm">
+                  <div className="bg-white border border-slate-200/50 p-5 rounded-3xl rounded-tl-none flex gap-2 shadow-sm">
                     <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
                     <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                     <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
@@ -422,13 +435,13 @@ const App: React.FC = () => {
                 type="text" 
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                placeholder="Frage eingeben..."
-                className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium"
+                placeholder="Ihre Nachricht an uns..."
+                className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all font-medium text-slate-700"
               />
               <button 
                 type="submit"
                 disabled={!userInput.trim() || isTyping}
-                className="bg-blue-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 shadow-lg shadow-blue-200 transition-all hover:scale-105"
+                className="bg-blue-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 shadow-xl shadow-blue-100 transition-all hover:scale-105 active:scale-95"
               >
                 <i className="fa-solid fa-paper-plane text-xl"></i>
               </button>
@@ -436,7 +449,7 @@ const App: React.FC = () => {
           </section>
         )}
 
-        {activeTab === 'contact' && (
+        {activeTab === 'contact' && (activeTab === 'contact' && (
           <section className="max-w-3xl mx-auto bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100 animate-fade-in mb-12">
             <h2 className="text-4xl font-black mb-10 text-slate-800 tracking-tight">Kontakt</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -511,7 +524,7 @@ const App: React.FC = () => {
               </div>
             </div>
           </section>
-        )}
+        ))}
       </main>
 
       <footer className="hidden md:block py-16 text-center">
