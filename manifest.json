@@ -1,22 +1,25 @@
 
 {
   "name": "Allround Service Stielke",
-  "short_name": "Stielke Service",
-  "description": "Ihr Partner für Hausmeisterdienste und Gartenpflege in Salzatal.",
-  "start_url": "./index.html",
+  "short_name": "Stielke",
+  "description": "Ihr Partner für Haus, Garten und Hof in Salzatal.",
+  "start_url": "index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
   "icons": [
     {
       "src": "https://www.svgrepo.com/show/491510/cleaning-mop.svg",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "https://www.svgrepo.com/show/491510/cleaning-mop.svg",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
