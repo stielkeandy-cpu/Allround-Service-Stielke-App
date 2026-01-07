@@ -4,8 +4,9 @@ import Navigation from './components/Navigation';
 import { ServiceType, BookingRequest } from './types';
 import { getGeminiResponse } from './services/geminiService';
 
-const APP_VERSION = "1.3.1"; // Contact Validation Update
-const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/u/0/appointments/schedules/YOUR_SCHEDULE_ID"; // Platzhalter für Ihren Buchungslink
+const APP_VERSION = "1.4.0"; // Hours & Direct Call Update
+const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/u/0/appointments/schedules/YOUR_SCHEDULE_ID"; 
+const PHONE_NUMBER = "015123556495";
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -28,6 +29,21 @@ const App: React.FC = () => {
   const [contactMessage, setContactMessage] = useState('');
   const [contactError, setContactError] = useState<string | null>(null);
   const [formAttempted, setFormAttempted] = useState(false);
+
+  // Opening Hours Logic
+  const getOpeningStatus = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const hour = now.getHours();
+    
+    // Mo-Fr: 8-18, Sa: 9-14
+    if (day >= 1 && day <= 5) {
+      return hour >= 8 && hour < 18;
+    } else if (day === 6) {
+      return hour >= 9 && hour < 14;
+    }
+    return false;
+  };
 
   const services = [
     { type: ServiceType.GARDENING, title: 'Gartenpflege', desc: 'Rasenmähen, Heckenschnitt und Beetpflege für einen traumhaften Garten.', icon: 'fa-seedling', color: 'bg-green-100 text-green-600', accent: 'border-green-200' },
@@ -126,7 +142,7 @@ const App: React.FC = () => {
         {activeTab === 'home' && (
           <section className="animate-fade-in space-y-10 relative">
             {/* Hero Section */}
-            <div className="relative h-96 md:h-[500px] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center justify-center p-6 text-center border-4 border-white">
+            <div className="relative h-[450px] md:h-[550px] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col items-center justify-center p-6 text-center border-4 border-white">
               <img src="https://images.unsplash.com/photo-1581578731522-745d05cb972b?auto=format&fit=crop&q=80&w=1200" className="absolute inset-0 w-full h-full object-cover" alt="Service background" />
               <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/50 to-slate-900/85"></div>
               
@@ -148,13 +164,22 @@ const App: React.FC = () => {
                   Professionelle Haus- und Gartenpflege aus einer Hand.
                 </p>
 
-                <button 
-                  onClick={() => setActiveTab('services')}
-                  className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
-                >
-                  <i className="fa-solid fa-calendar-days"></i>
-                  Termin buchen
-                </button>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <button 
+                    onClick={() => setActiveTab('services')}
+                    className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                  >
+                    <i className="fa-solid fa-calendar-days"></i>
+                    Termin buchen
+                  </button>
+                  <a 
+                    href={`tel:${PHONE_NUMBER}`}
+                    className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 border-2 border-blue-500"
+                  >
+                    <i className="fa-solid fa-phone"></i>
+                    Jetzt Anrufen
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -491,50 +516,103 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'contact' && (
-          <section className="max-w-3xl mx-auto bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100 animate-fade-in mb-12">
-            <h2 className="text-4xl font-black mb-10 text-slate-800 tracking-tight">Kontakt</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              <div className="space-y-8">
-                <div className="flex items-start gap-5 group">
-                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                    <i className="fa-solid fa-location-dot text-xl"></i>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-1">Anschrift</h4>
-                    <p className="text-slate-700 font-bold">Naundorfer Weg 4</p>
-                    <p className="text-slate-500">06198 Salzatal</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-5 group">
-                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                    <i className="fa-solid fa-phone text-xl"></i>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-1">Telefon</h4>
-                    <a href="tel:015123556495" className="text-slate-700 font-bold hover:text-blue-600 transition-colors">015123556495</a>
-                  </div>
-                </div>
-                <div className="flex items-start gap-5 group">
-                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                    <i className="fa-solid fa-envelope text-xl"></i>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-1">E-Mail</h4>
-                    <a href="mailto:kontakt@allroundservicestielke.de" className="text-blue-600 font-bold hover:underline break-all">kontakt@allroundservicestielke.de</a>
-                  </div>
-                </div>
-                
-                <div className="pt-4 border-t border-slate-50 flex items-center gap-2 opacity-40">
-                  <i className="fa-solid fa-code-branch text-[10px]"></i>
-                  <span className="text-[10px] font-bold tracking-widest uppercase">Version {APP_VERSION}</span>
+          <section className="space-y-8 animate-fade-in pb-12">
+            {/* Contact Info Header with Status */}
+            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+                <h2 className="text-4xl font-black text-slate-800 tracking-tight">Kontakt & Erreichbarkeit</h2>
+                <div className={`px-4 py-2 rounded-full flex items-center gap-2 font-bold text-sm ${getOpeningStatus() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                   <span className={`w-2 h-2 rounded-full ${getOpeningStatus() ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                   {getOpeningStatus() ? 'Jetzt geöffnet' : 'Derzeit geschlossen'}
                 </div>
               </div>
 
-              <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100">
-                <h4 className="font-bold text-xl mb-6 flex items-center gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* Contact Cards */}
+                <div className="space-y-6">
+                  <div className="flex items-start gap-5 group">
+                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                      <i className="fa-solid fa-location-dot text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-1">Anschrift</h4>
+                      <p className="text-slate-700 font-bold">Naundorfer Weg 4</p>
+                      <p className="text-slate-500">06198 Salzatal</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-5 group">
+                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                      <i className="fa-solid fa-phone text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-1">Telefon</h4>
+                      <a href={`tel:${PHONE_NUMBER}`} className="text-slate-700 font-bold hover:text-blue-600 transition-colors">{PHONE_NUMBER}</a>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-5 group">
+                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                      <i className="fa-solid fa-envelope text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-1">E-Mail</h4>
+                      <a href="mailto:kontakt@allroundservicestielke.de" className="text-blue-600 font-bold hover:underline break-all">kontakt@allroundservicestielke.de</a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Opening Hours Table */}
+                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                  <h4 className="font-black text-slate-400 text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i className="fa-solid fa-clock text-blue-600"></i>
+                    Öffnungszeiten
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between border-b border-slate-200 pb-1">
+                      <span className="text-slate-500">Mo - Fr</span>
+                      <span className="font-bold text-slate-800">08:00 - 18:00</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200 pb-1">
+                      <span className="text-slate-500">Samstag</span>
+                      <span className="font-bold text-slate-800">09:00 - 14:00</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Sonntag</span>
+                      <span className="italic">Geschlossen</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Action Card */}
+                <div className="flex flex-col gap-4">
+                  <a 
+                    href={`tel:${PHONE_NUMBER}`}
+                    className="flex-1 bg-blue-600 text-white rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 group"
+                  >
+                    <i className="fa-solid fa-phone-volume text-3xl mb-1 group-hover:scale-110 transition-transform"></i>
+                    <span className="font-black text-lg uppercase tracking-tight">Jetzt Anrufen</span>
+                    <span className="text-xs opacity-80">Direkte Hilfe im Salzatal</span>
+                  </a>
+                  <button 
+                    onClick={handleCalendarOpen}
+                    className="flex-1 bg-slate-800 text-white rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-slate-900 transition-all shadow-xl shadow-slate-200"
+                  >
+                    <i className="fa-solid fa-calendar-check text-3xl mb-1"></i>
+                    <span className="font-black text-lg uppercase tracking-tight">Termin Online</span>
+                    <span className="text-xs opacity-80">Wählen Sie Ihren Wunschtermin</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Existing Contact Form */}
+            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-sm border border-slate-100">
+              <div className="max-w-xl mx-auto">
+                <h4 className="font-black text-slate-800 text-2xl mb-2 flex items-center gap-2">
                   <i className="fa-solid fa-paper-plane text-blue-600"></i>
-                  Direktanfrage
+                  Nachricht senden
                 </h4>
+                <p className="text-slate-500 text-sm mb-8">Wir erstellen einen E-Mail Entwurf für Sie.</p>
+                
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <input 
@@ -545,21 +623,21 @@ const App: React.FC = () => {
                         setContactName(e.target.value);
                         if (e.target.value.trim()) setContactError(null);
                       }}
-                      className={`w-full bg-white border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium ${
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium ${
                         formAttempted && !contactName.trim() ? 'border-red-400 animate-shake' : 'border-slate-100'
                       }`} 
                     />
                   </div>
                   <div className="space-y-1">
                     <textarea 
-                      placeholder="Nachricht..." 
+                      placeholder="Wie können wir Ihnen helfen?" 
                       rows={4} 
                       value={contactMessage}
                       onChange={(e) => {
                         setContactMessage(e.target.value);
                         if (e.target.value.trim()) setContactError(null);
                       }}
-                      className={`w-full bg-white border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none resize-none font-medium transition-all ${
+                      className={`w-full bg-slate-50 border-2 rounded-2xl p-4 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none resize-none font-medium transition-all ${
                         formAttempted && !contactMessage.trim() ? 'border-red-400 animate-shake' : 'border-slate-100'
                       }`}
                     ></textarea>
@@ -577,13 +655,15 @@ const App: React.FC = () => {
                     className="w-full bg-blue-600 text-white font-bold py-5 rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-100 active:scale-95"
                   >
                     <i className="fa-solid fa-envelope-open-text text-xl"></i>
-                    E-Mail Entwurf
+                    E-Mail Entwurf erstellen
                   </button>
-                  <p className="text-[10px] text-center text-slate-400 mt-4 leading-relaxed">
-                    Alle Anfragen werden per E-Mail an kontakt@allroundservicestielke.de weitergeleitet.
-                  </p>
                 </div>
               </div>
+            </div>
+            
+            <div className="text-center opacity-40 py-4 flex flex-col items-center gap-2">
+              <i className="fa-solid fa-code-branch text-xs"></i>
+              <span className="text-[10px] font-bold tracking-widest uppercase tracking-[0.3em]">Version {APP_VERSION} - Stielke Digital Service</span>
             </div>
           </section>
         )}
